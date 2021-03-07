@@ -1,46 +1,55 @@
-// check('()', [['(', ')']]) // -> true
-// check('((()))()', [['(', ')']]) // -> true
-// check('())(', [['(', ')']]) // -> false
-// check('([{}])', [['(', ')'], ['[', ']'], ['{', '}']]) // -> true
-// check('[(])', [['(', ')'], ['[', ']']]) // -> false
-// check('[]()', [['(', ')'], ['[', ']']]) // -> true
-// check('[]()(', [['(', ')'], ['[', ']']]) // -> false
-
-// // special case: opening and closing bracket can be the same :)
-
-// check('||', [['|', '|']]) // -> true
-// check('|()|', [['(', ')'], ['|', '|']]) // -> true
-// check('|(|)', [['(', ')'], ['|', '|']]) // -> false
-// check('|()|(||)||', [['(', ')'], ['|', '|']]) // -> true
-
 module.exports = function check(str, bracketsConfig) {
-  // console.log(str);
-  let levels = []
-  let currentLevel = -1;
-  // bracketsConfig = bracketsConfig.map( b => b[0] == b[1] ? [b[0], b[1] += 1] : b)
-  function isOpenOrClose(s, isOpen) {
-    const brs = isOpen ? bracketsConfig.map(b => b[0]) : bracketsConfig.map(b => b[1])
-    const ind = brs.indexOf(s)
-    return ind != -1 ? brs[ind] : false
-  }
+  return isValid(str, bracketsConfig)
+}
+
+function isValid(s, b) {
+  const { str, brackets } = normConfig(s, b)
+  const stack = [];
   for (let i = 0; i < str.length; i++) {
-    const opn = isOpenOrClose(str[i], true)
-    if (opn) {
-      levels.push([opn])
-      currentLevel = levels.length
-      continue
-    }
-    
-    const clsd = isOpenOrClose(str[i], false)
-    if (clsd && typeof levels[currentLevel - 1] !== 'undefined') {
-      currentLevel -= 1;
-      console.log(str[i]);
-      console.log(currentLevel);
-      console.log(levels);
-      levels[currentLevel].push(clsd)
+    if (isClosedBracket(str[i], brackets)) {
+      if (brackets[str[i]] !== stack.pop()) return false;
+    } else {
+      stack.push(str[i]);
     }
   }
-  // console.log(levels);
-  return levels.every(l => bracketsConfig.every(b => b.join("") === l.join("")))
-  return levels
+  return stack.length === 0;
+}
+
+function normConfig(str, bracketsConfig) {
+  const dict = [["a", "b"], ['c', 'd']];
+  let brackets = {}
+  bracketsConfig.forEach(b => {
+    if (b[0] === b[1]) {
+      let d = dict.pop();
+      brackets[d[1]] = d[0]
+      str = normStr(str, b[0], d[0], d[1])
+    }
+    else {
+      brackets[b[1]] = b[0]
+    }
+  })
+  return { str, brackets }
+}
+
+function isClosedBracket(ch, normBrackets) {
+  return Object.keys(normBrackets).includes(ch);
+}
+
+function normStr(str, bracket, bracketA, bracketB) {
+  let res = true;
+  let strA = str.split("");
+  let i = str.indexOf(bracket);
+  while (str.indexOf(bracket, i) != -1 && i < str.length) {
+    i = str.indexOf(bracket, i)
+    if (res) {
+      strA[i] = bracketA;
+      res = false
+    }
+    else {
+      strA[i] = bracketB;
+      res = true
+    }
+    i += 1
+  }
+  return strA.join("")
 }
